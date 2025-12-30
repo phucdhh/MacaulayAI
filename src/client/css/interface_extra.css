@@ -14,7 +14,7 @@ body {
     height: calc(100% - 16px);
 }
 
-#left-half, #right-half {
+#left-half, #middle-half, #right-half {
     position: relative;
     /* grid has margin 8px, which is not subtracted by
     box-sizing, so we subtract it manually */
@@ -29,16 +29,22 @@ body {
 	justify-content: flex-start; /* this way the right-half can disappear out of the screen entirely */
     }
     #left-half {
-	flex: 0 0 49%;
+	flex: 0 0 33%;
 	width: 0px; /* now processed by flux */
     }
 
+    #middle-half {
+	flex: 0 0 33%;
+	width: 0px; /* now processed by flux */
+	min-width: 200px; /* otherwise absolutely positioned icons stay when middle-half shrunk */
+    }
+    
     #right-half {
 	flex: 1 0 auto;
 	width: 0px; /* now processed by flux */
 	min-width: 200px; /* otherwise absolutely positioned icons stay when right-half shrunk */
     }
-    #resize {
+    #resize, #resize2 {
 	flex-grow: 0;
 	flex-shrink: 0;
 	background: rgb(63,81,181);
@@ -46,7 +52,7 @@ body {
 	cursor: col-resize;
 	margin: 0 0 0 auto;
     }
-    #resizeball {
+    #resizeball, #resizeball2 {
 	z-index: 1;
 	position: relative;
 	top: 50%;
@@ -72,7 +78,7 @@ body {
 }
 */
 @media (max-width:479px) {
-    #resize {
+    #resize, #resize2 {
 	display: none;
     }
     .mdl-layout__header-row {

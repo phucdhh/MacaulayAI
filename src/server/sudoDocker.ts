@@ -36,7 +36,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
   // scan existing dockers
   public recoverInstances(next) {
     const self = this;
-    const dockerPsCmd = "sudo docker ps -q";
+    const dockerPsCmd = "docker ps -q";
     exec(dockerPsCmd, function (error, stdout, stderr) {
       const lst = stdout.split("\n");
 
@@ -48,7 +48,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
         }
         i--;
         if (lst[i] != "") {
-          const dockerInspectCmd = "sudo docker inspect " + lst[i];
+          const dockerInspectCmd = "docker inspect " + lst[i];
           exec(dockerInspectCmd, function (error, stdout, stderr) {
             const res = JSON.parse(stdout);
             const clientId = res[0].Config.Labels.clientId;
@@ -119,7 +119,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
             if (!err) {
               logger.info("Restoring files for " + clientId);
               const restoreDockerContainer =
-                "sudo docker exec -i " +
+                "docker exec -i " +
                 instance.containerName +
                 " tar -C /home/" +
                 instance.username +
@@ -163,7 +163,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
 
   public checkInstance = function (instance: Instance, next) {
     exec(
-      "diff <(sudo docker inspect m2container --format='{{.Id}}') <(sudo docker inspect " +
+      "diff <(docker inspect m2container --format='{{.Id}}') <(docker inspect " +
         instance.containerName +
         " --format='{{.Image}}')",
       next
@@ -211,7 +211,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
 
   private removeInstanceInternal(instance: Instance) {
     // actual removing docker
-    const removeDockerContainer = "sudo docker rm -f " + instance.containerName;
+    const removeDockerContainer = "docker rm -f " + instance.containerName;
     exec(removeDockerContainer, function (error) {
       if (error) {
         logger.error(
@@ -238,7 +238,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
       const saveDockerContainer =
         "rm -f " +
         savePath +
-        "; sudo docker exec " +
+        "; docker exec " +
         instance.containerName +
         ' tar --exclude "./.*" --exclude "./tutorials" -C /home/' +
         instance.username +
@@ -261,8 +261,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
   private constructDockerRunCommand(resources, newInstance: Instance) {
     const premium =
       serverOptions.premiumList.indexOf(newInstance.clientId) >= 0;
-    let dockerRunCmd =
-      "sudo docker run  --security-opt seccomp=seccomp.json -d";
+    let dockerRunCmd = "docker run  --security-opt seccomp=seccomp.json -d";
     dockerRunCmd += ' --cpus="' + resources.cpuShares + '"';
     dockerRunCmd +=
       ' --memory="' +
@@ -280,7 +279,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
 
   private waitForSshd(next, instance: Instance) {
     const dockerRunningProcesses =
-      "sudo docker exec " + instance.containerName + " ps aux";
+      "docker exec " + instance.containerName + " ps aux";
     const filterForSshd = 'grep "' + this.hostConfig.sshdCmd + '"';
     const excludeGrep = "grep -v grep";
 

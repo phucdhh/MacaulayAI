@@ -25,6 +25,7 @@ import {
   syntaxHighlight,
   updateAndHighlightMaybe,
 } from "./editor";
+import { AIChatUI } from "../../ai-assistant/aiChat";
 
 const hashCode = function (s: string) {
   let hash = 0,
@@ -438,6 +439,72 @@ const extra1 = function () {
   };
 
   resize.ontouchstart = resizeTouchStart;
+
+  // resize2 (between middle-half and right-half)
+  const resize2 = document.getElementById("resize2");
+  let ismdwn2 = 0;
+  const resize2MouseDown = () => {
+    ismdwn2 = 1;
+    document.body.addEventListener("mousemove", resize2MouseMove);
+    document.body.addEventListener("mouseup", resize2MouseEnd);
+    document.body.addEventListener("mouseleave", resize2MouseEnd);
+    if (iFrame && iFrame.contentDocument && iFrame.contentDocument.body)
+      iFrame.contentDocument.body.addEventListener(
+        "mousemove",
+        resize2MouseMove
+      );
+    document.body.style.userSelect = "none";
+  };
+
+  const resize2MouseMove = (event) => {
+    if (ismdwn2 === 1) {
+      const leftHalf = document.getElementById("left-half") as any;
+      const middleHalf = document.getElementById("middle-half") as any;
+      const leftWidth = leftHalf.getBoundingClientRect().width;
+      (document.getElementById("middle-half") as any).style.flexBasis =
+        event.clientX - leftWidth - 24 + "px";
+    } else resize2MouseEnd();
+  };
+
+  const resize2MouseEnd = () => {
+    ismdwn2 = 0;
+    document.body.removeEventListener("mousemove", resize2MouseMove);
+    document.body.removeEventListener("mouseup", resize2MouseEnd);
+    document.body.removeEventListener("mouseleave", resize2MouseEnd);
+    if (iFrame && iFrame.contentDocument && iFrame.contentDocument.body)
+      iFrame.contentDocument.body.removeEventListener(
+        "mousemove",
+        resize2MouseMove
+      );
+    document.body.style.userSelect = "";
+    checkScrollButton();
+  };
+
+  resize2.onmousedown = resize2MouseDown;
+
+  const resize2TouchStart = () => {
+    document.body.addEventListener("touchmove", resize2TouchMove);
+    document.body.addEventListener("touchend", resize2TouchEnd);
+    document.body.addEventListener("touchcancel", resize2TouchEnd);
+    document.body.style.userSelect = "none";
+  };
+
+  const resize2TouchMove = (event) => {
+    const leftHalf = document.getElementById("left-half") as any;
+    const leftWidth = leftHalf.getBoundingClientRect().width;
+    (document.getElementById("middle-half") as any).style.flexBasis =
+      event.changedTouches[0].clientX - leftWidth - 24 + "px";
+  };
+
+  const resize2TouchEnd = () => {
+    document.body.removeEventListener("touchmove", resize2TouchMove);
+    document.body.removeEventListener("touchend", resize2TouchEnd);
+    document.body.removeEventListener("touchcancel", resize2TouchEnd);
+    document.body.style.userSelect = "";
+    checkScrollButton();
+  };
+
+  resize2.ontouchstart = resize2TouchStart;
 };
 
 // 2nd part: once session active
@@ -1098,6 +1165,13 @@ const extra2 = function () {
   if (cookieQuery) cookieQuery.onclick = queryCookie;
 
   socket.on("filechanged", fileChangedCheck);
+
+  // Initialize AI Assistant
+  if (document.getElementById("ai-assistant-container")) {
+    const aiUI = new AIChatUI("ai-assistant-container");
+    // Hook auto-explain to terminal output if needed
+    // socket.on("output", (data) => { if (autoExplainEnabled) aiUI.explainMacaulay2Output(data); });
+  }
 };
 
 export {
