@@ -79,6 +79,7 @@ export class AIChatUI {
           <div class="ai-welcome-message">
             <div class="ai-message-bubble ai-assistant-bubble">
               <div class="ai-message-content">
+                <div class="ai-warning">Warning: AI may produce incorrect information. Please double-check!</div>
                 Welcome! I'm your Macaulay2 assistant. Ask me about:
                 <ul>
                   <li>Understanding Macaulay2 output</li>
