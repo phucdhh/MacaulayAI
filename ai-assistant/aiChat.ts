@@ -583,8 +583,11 @@ export class AIChatUI {
     // Format content with markdown-like formatting
     let formatted = this.formatContent(answer);
 
+    // Prepend English warning banner so streaming updates show it too
+    const warningHtml = `<div class="ai-warning">Warning: AI may produce incorrect information. Please double-check!</div>`;
+
     // Update content
-    contentDiv.innerHTML = formatted;
+    contentDiv.innerHTML = warningHtml + formatted;
 
     // Render KaTeX immediately for each update - no debounce
     // This allows formulas to render as soon as they're complete
