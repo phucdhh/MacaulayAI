@@ -76,6 +76,19 @@ has been designed to work with Emacs where a plugin allows you to run code from 
 
 The interface contains two more tabs: a chat tab which allows for simple interaction with users and messaging from
 the system; and a browse tab, mostly used for documentation (though it can in principle display any URL).
+ 
+## AI Assistant
+
+Macaulay2Web includes an integrated AI Assistant accessible from the chat tab. The assistant can:
+
+- Answer questions about Macaulay2 usage and algebraic concepts using contextual chat.
+- Stream long answers progressively so you can follow reasoning as it is produced.
+- Render mathematical formulas using KaTeX inside chat bubbles for readable math output.
+- Keep long responses inside a scrollable answer bubble so the main chat layout remains stable.
+
+The assistant is designed to complement interactive Macaulay2 sessions (for example, suggesting commands or
+explaining output) but it does not replace executing Macaulay2 code — use the editor/evaluate workflow for live
+computations. See the `ai-assistant/` folder for client-side UI code and integration logic.
 
 ## Usage
 
