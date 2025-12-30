@@ -28,3 +28,6 @@ docker_key*
 host_key*
 public/tutorials
 public/files
+
+# local AI config (contains API keys) - keep private
+/ai-assistant/ai.conf
