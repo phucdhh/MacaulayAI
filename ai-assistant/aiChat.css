@@ -190,6 +190,17 @@
   line-height: 1.5;
 }
 
+/* Inline warning shown at top of assistant messages */
+.ai-message-content .ai-warning {
+  color: #b71c1c;
+  background: rgba(183,28,28,0.04);
+  border-left: 3px solid #b71c1c;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
 .ai-message-content code {
   background: rgba(0,0,0,0.08);
   padding: 2px 6px;

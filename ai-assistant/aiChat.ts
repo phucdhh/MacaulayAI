@@ -297,6 +297,11 @@ export class AIChatUI {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'ai-message-content';
 
+    // Warning banner for assistant messages: remind users to double-check AI output
+    const warningHtml = role === 'assistant'
+      ? `<div class="ai-warning">Cảnh báo: AI có thể cung cấp thông tin không chính xác. Vui lòng kiểm tra lại!</div>`
+      : '';
+
     // If the AI included a Macaulay2-safe block marker, render human/readable
     // part separately and the Macaulay2-safe block in a copy-paste friendly code box.
     if (/Macaulay2-safe:/i.test(content)) {
@@ -305,7 +310,7 @@ export class AIChatUI {
       const human = parts[0].trim();
       const code = parts.slice(1).join('Macaulay2-safe:').trim();
 
-      if (human) contentDiv.innerHTML += this.formatContent(human) + '<br/>';
+      if (human) contentDiv.innerHTML += warningHtml + this.formatContent(human) + '<br/>';
       // Wrap code in a dedicated block
       const safeBlock = document.createElement('div');
       safeBlock.className = 'm2-safe';
@@ -316,7 +321,7 @@ export class AIChatUI {
       safeBlock.appendChild(pre);
       contentDiv.appendChild(safeBlock);
     } else {
-      contentDiv.innerHTML = this.formatContent(content);
+      contentDiv.innerHTML = warningHtml + this.formatContent(content);
     }
 
     bubble.appendChild(contentDiv);
