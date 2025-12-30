@@ -470,9 +470,39 @@ const initializeServer = function () {
   serveStatic.mime.define({ "text/plain": ["m2"] }); // declare m2 files as plain text for browsing purposes
 
   app.use(expressWinston.logger(logger));
+  app.use(express.json()); // Parse JSON bodies
   app.use(favicon(staticFolder + "favicon.ico"));
   app.post("/upload/", upload.array("files[]"), fileUpload);
+
+  // AI proxy endpoint to avoid CORS
+  app.post("/api/ai/chat", async (req, res) => {
+    try {
+      logger.info("AI proxy request received");
+      const fetch = (await import("node-fetch")).default;
+      const response = await fetch("http://localhost:11434/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      // Stream the response for thinking/reasoning display
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Transfer-Encoding", "chunked");
+
+      // Pipe the streaming response
+      response.body.pipe(res);
+    } catch (error) {
+      logger.error("AI proxy error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.use("/usr/share/", serveStatic("/usr/share"), serveIndex("/usr/share")); // optionally, serve documentation locally and allow browsing
+  app.use("/ai-assistant/", serveStatic(__dirname + "/../../ai-assistant")); // serve AI assistant files
   app.use(serveStatic(staticFolder, { dotfiles: "allow" }));
   app.use(fileDownload);
   app.use(unhandled);

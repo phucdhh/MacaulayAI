@@ -21,7 +21,7 @@ const options = {
       //      tagstderr: "LD_PRELOAD=/usr/lib64/libtagstderr.so ", // should be last
     },
     m2Command: "M2 --webapp",
-    port: 8002,
+    port: 5657,
     baseDirectory: "", // to change the directory in which M2 is started & files are up/downloaded
     mode: undefined,
   },
@@ -39,7 +39,7 @@ const options = {
     maxContainerNumber: 400,
     containerType: "m2container",
     sshdCmd: "/usr/sbin/sshd -D",
-    dockerCmdPrefix: "sudo ",
+    dockerCmdPrefix: "",
     host: "192.168.2.42",
     username: "vagrant",
     port: 22,
