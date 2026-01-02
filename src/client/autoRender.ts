@@ -170,40 +170,47 @@ const renderMathInText = function (text) {
 };
 
 const autoRender = function (elem) {
-  for (let i = 0; i < elem.childNodes.length; i++) {
-    let childNode = elem.childNodes[i];
-    if (childNode.nodeType === 3) {
-      // Text node
-      let str = childNode.textContent;
-      const i0 = i;
-      while (
-        i < elem.childNodes.length - 1 &&
-        elem.childNodes[i + 1].nodeType === 3
-      ) {
-        i++;
-        childNode = elem.childNodes[i];
-        str += childNode.textContent; // in case text nodes get split because of max length. see similar implementation in https://github.com/KaTeX/KaTeX/pull/3422
-      }
-      const frag = renderMathInText(str);
-      if (frag) {
-        while (i > i0) {
-          elem.removeChild(elem.childNodes[i0]);
-          i--;
+  // Use iterative approach with stack instead of recursion to avoid stack overflow
+  const stack = [elem];
+  
+  while (stack.length > 0) {
+    const currentElem = stack.pop();
+    
+    for (let i = 0; i < currentElem.childNodes.length; i++) {
+      let childNode = currentElem.childNodes[i];
+      if (childNode.nodeType === 3) {
+        // Text node
+        let str = childNode.textContent;
+        const i0 = i;
+        while (
+          i < currentElem.childNodes.length - 1 &&
+          currentElem.childNodes[i + 1].nodeType === 3
+        ) {
+          i++;
+          childNode = currentElem.childNodes[i];
+          str += childNode.textContent; // in case text nodes get split because of max length. see similar implementation in https://github.com/KaTeX/KaTeX/pull/3422
         }
-        i += frag.childNodes.length - 1;
-        elem.replaceChild(frag, childNode);
-      }
-    } else if (childNode.nodeType === 1) {
-      // Element node
-      if (
-        katexOptions.ignoredTags.indexOf(childNode.nodeName) === -1 &&
-        katexOptions.ignoredClasses.every(
-          (x) => !childNode.classList.contains(x)
+        const frag = renderMathInText(str);
+        if (frag) {
+          while (i > i0) {
+            currentElem.removeChild(currentElem.childNodes[i0]);
+            i--;
+          }
+          i += frag.childNodes.length - 1;
+          currentElem.replaceChild(frag, childNode);
+        }
+      } else if (childNode.nodeType === 1) {
+        // Element node
+        if (
+          katexOptions.ignoredTags.indexOf(childNode.nodeName) === -1 &&
+          katexOptions.ignoredClasses.every(
+            (x) => !childNode.classList.contains(x)
+          )
         )
-      )
-        autoRender(childNode);
+          stack.push(childNode); // Add to stack instead of recursive call
+      }
+      // Otherwise, it's something else, and ignore it.
     }
-    // Otherwise, it's something else, and ignore it.
   }
 };
 

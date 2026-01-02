@@ -20,7 +20,7 @@ const options = {
       stty: "stty -echo;",
       //      tagstderr: "LD_PRELOAD=/usr/lib64/libtagstderr.so ", // should be last
     },
-    m2Command: "M2 --webapp",
+    m2Command: "M2 --webapp -E 'recursionLimit=3000'",
     port: 5657,
     baseDirectory: "", // to change the directory in which M2 is started & files are up/downloaded
     mode: undefined,

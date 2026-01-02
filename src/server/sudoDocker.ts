@@ -261,7 +261,7 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
   private constructDockerRunCommand(resources, newInstance: Instance) {
     const premium =
       serverOptions.premiumList.indexOf(newInstance.clientId) >= 0;
-    let dockerRunCmd = "docker run  --security-opt seccomp=seccomp.json -d";
+    let dockerRunCmd = "docker run --platform linux/amd64 --security-opt seccomp=seccomp.json -d";
     dockerRunCmd += ' --cpus="' + resources.cpuShares + '"';
     dockerRunCmd +=
       ' --memory="' +
@@ -299,8 +299,10 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
         logger.info("Looking for sshd. OUT: " + stdout + " ERR: " + stderr);
 
         if (runningSshDaemons) {
-          logger.info("sshd is ready");
-          next(instance);
+          logger.info("sshd is ready, waiting 2 seconds for socket binding...");
+          setTimeout(function () {
+            next(instance);
+          }, 2000);
         } else {
           logger.info("sshd not ready yet");
           setTimeout(function () {

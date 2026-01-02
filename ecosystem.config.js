@@ -4,7 +4,7 @@ module.exports = {
       name: 'macaulay2web',
       cwd: '/Users/mac/Macaulay2',
       script: 'npm',
-      args: 'start docker',
+      args: 'start local',
       instances: 1,
       autorestart: true,
       watch: false,

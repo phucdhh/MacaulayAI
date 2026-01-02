@@ -4,8 +4,41 @@ Macaulay2Web is a web interface for the [Macaulay2](http://www.macaulay2.com).
 
 It is currently running at https://www.unimelb-macaulay2.cloud.edu.au/.
 
-## Quickstart: without virtualization
-This is now the recommended way, as it is less heavy than with virtualization.
+## Quickstart: Mac (Apple Silicon) - Recommended
+For Mac users with Apple Silicon (M1/M2/M3), using local Macaulay2 via Homebrew is the recommended approach, as it provides native ARM64 performance without Docker emulation overhead.
+
+**Prerequisites**: Homebrew, Node.js, Git
+
+* Run the following from the terminal:
+```bash
+# Clone repository
+git clone https://github.com/pzinn/Macaulay2Web.git
+cd Macaulay2Web
+git submodule init
+git submodule update
+
+# Install Macaulay2 via Homebrew (native ARM64)
+brew install macaulay2/tap/macaulay2
+
+# Setup SSH keys for local connection
+ssh-keygen -t ecdsa -f ~/.ssh/id_ecdsa -N ''
+cat ~/.ssh/id_ecdsa.pub >> ~/.ssh/authorized_keys
+chmod 644 ~/.ssh/authorized_keys
+
+# Install dependencies and build
+npm install
+npm run build
+
+# Start in local mode
+npm start local
+```
+
+* Point your browser to [localhost:8002](http://localhost:8002).
+
+**Note**: Local mode connects to Macaulay2 running on your Mac via SSH. This is significantly faster than Docker x86 emulation on ARM64 Macs.
+
+## Quickstart: Linux/x86 Mac - Docker
+This is the recommended way for Linux and Intel Macs, as it is less heavy than with virtualization.
 Tools needed: git, nodejs, npm, docker, ssh.
 
 * Run the following from the terminal
@@ -21,16 +54,6 @@ docker pull pzinn/m2container
 docker build -t m2container .
 npm start docker
 ```
-
-You can even run your local version of M2 (rather the dockerised one),
-though this is not recommended. In this case replace the last four
-lines with
-```bash
-ssh-keygen -t ecdsa -f ~/.ssh/id_ecdsa
-cat ~/.ssh/id_ecdsa.pub > ~/.ssh/authorized_keys
-npm start local
-```
-
 
 * Point your browser to [localhost:8002](http://localhost:8002).
 

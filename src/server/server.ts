@@ -44,6 +44,16 @@ const sshCredentials = function (instance: Instance): ssh2.ConnectConfig {
       port: instance.port,
       username: instance.username,
       privateKey: fs.readFileSync(instance.sshKey),
+      readyTimeout: 30000,
+      keepaliveInterval: 10000,
+      hostVerifier: () => true,
+      algorithms: {
+        serverHostKey: ['ssh-rsa', 'rsa-sha2-512', 'rsa-sha2-256', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519'],
+        kex: ['ecdh-sha2-nistp256', 'ecdh-sha2-nistp384', 'ecdh-sha2-nistp521', 'diffie-hellman-group-exchange-sha256', 'diffie-hellman-group14-sha256', 'diffie-hellman-group14-sha1', 'diffie-hellman-group-exchange-sha1'],
+        cipher: ['aes128-gcm@openssh.com', 'aes128-gcm', 'aes256-gcm@openssh.com', 'aes256-gcm', 'aes128-ctr', 'aes192-ctr', 'aes256-ctr', 'aes128-cbc', 'aes192-cbc', 'aes256-cbc'],
+        hmac: ['hmac-sha2-256', 'hmac-sha2-512', 'hmac-sha1']
+      },
+      debug: (msg) => logger.info("SSH Debug: " + msg),
     };
 };
 
@@ -139,6 +149,12 @@ const spawnMathProgram = function (client: Client, next) {
     );
     connection.end(); // we don't want more errors produced
     next(false);
+  });
+  connection.on("close", function () {
+    logger.warn("SSH connection closed before ready event", client);
+  });
+  connection.on("end", function () {
+    logger.warn("SSH connection ended before ready event", client);
   });
   connection
     .on("ready", function () {
