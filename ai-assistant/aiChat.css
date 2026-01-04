@@ -190,6 +190,56 @@
   line-height: 1.5;
 }
 
+/* M2 Code Block Styles */
+.m2-code-block {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 8px;
+  margin: 8px 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 13px;
+}
+
+.m2-command {
+  background: #fef9e7;
+  border: 1px solid #f39c12;
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin: 4px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.m2-command:hover {
+  background: #ffeaa7;
+  border-color: #e67e22;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transform: translateX(2px);
+}
+
+.m2-command:active {
+  background: #fdcb6e;
+  transform: translateX(0);
+}
+
+.m2-comment {
+  color: #999;
+  padding: 2px 10px;
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.m2-output {
+  color: #555;
+  padding: 2px 10px;
+  white-space: pre-wrap;
+  background: #f9f9f9;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+}
+
 /* Inline warning shown at top of assistant messages */
 .ai-message-content .ai-warning {
   color: #b71c1c;

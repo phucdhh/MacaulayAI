@@ -184,7 +184,7 @@ class AIAssistant {
     return messages;
   }
 
-  public async sendMessage(userMessage: string, onThinking?: (thinking: string) => void, onAnswer?: (answer: string) => void): Promise<string> {
+  public async sendMessage(userMessage: string, onThinking?: (thinking: string) => void, onAnswer?: (answer: string) => void, abortSignal?: AbortSignal): Promise<string> {
     const model = this.getCurrentModel();
     if (!model) {
       throw new Error('No AI model selected');
@@ -196,7 +196,7 @@ class AIAssistant {
     messages.push({ role: 'user', content: userMessage });
 
     try {
-      const response = await this.callAI(model, messages, onThinking, onAnswer);
+      const response = await this.callAI(model, messages, onThinking, onAnswer, abortSignal);
       this.addMessage('assistant', response, false);
       return response;
     } catch (error) {
@@ -210,7 +210,7 @@ class AIAssistant {
     return this.sendMessage(explainPrompt);
   }
 
-  private async callAI(model: AIModel, messages: any[], onThinking?: (thinking: string) => void, onAnswer?: (answer: string) => void): Promise<string> {
+  private async callAI(model: AIModel, messages: any[], onThinking?: (thinking: string) => void, onAnswer?: (answer: string) => void, abortSignal?: AbortSignal): Promise<string> {
     // Use proxy endpoint to avoid CORS
     const endpoint = '/api/ai/chat';
 
@@ -220,13 +220,19 @@ class AIAssistant {
       stream: true  // Enable streaming to get thinking process
     };
 
+    console.log('AI callAI: Starting request to', endpoint, 'with model', model.id);
+    console.log('AI callAI: Signal aborted?', abortSignal?.aborted);
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      signal: abortSignal
     });
+
+    console.log('AI callAI: Fetch completed, status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -279,6 +285,7 @@ class AIAssistant {
       }
     }
 
+    console.log('AI callAI: Stream reading complete, fullContent length:', fullContent.length);
     return fullContent || 'No response from AI';
   }
 

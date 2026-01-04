@@ -261,7 +261,8 @@ class SudoDockerContainersInstanceManager implements InstanceManager {
   private constructDockerRunCommand(resources, newInstance: Instance) {
     const premium =
       serverOptions.premiumList.indexOf(newInstance.clientId) >= 0;
-    let dockerRunCmd = "docker run --platform linux/amd64 --security-opt seccomp=seccomp.json -d";
+    let dockerRunCmd =
+      "docker run --platform linux/amd64 --security-opt seccomp=seccomp.json -d";
     dockerRunCmd += ' --cpus="' + resources.cpuShares + '"';
     dockerRunCmd +=
       ' --memory="' +

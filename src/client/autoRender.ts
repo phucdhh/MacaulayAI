@@ -172,10 +172,10 @@ const renderMathInText = function (text) {
 const autoRender = function (elem) {
   // Use iterative approach with stack instead of recursion to avoid stack overflow
   const stack = [elem];
-  
+
   while (stack.length > 0) {
     const currentElem = stack.pop();
-    
+
     for (let i = 0; i < currentElem.childNodes.length; i++) {
       let childNode = currentElem.childNodes[i];
       if (childNode.nodeType === 3) {

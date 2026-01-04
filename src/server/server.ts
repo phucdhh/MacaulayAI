@@ -48,10 +48,37 @@ const sshCredentials = function (instance: Instance): ssh2.ConnectConfig {
       keepaliveInterval: 10000,
       hostVerifier: () => true,
       algorithms: {
-        serverHostKey: ['ssh-rsa', 'rsa-sha2-512', 'rsa-sha2-256', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519'],
-        kex: ['ecdh-sha2-nistp256', 'ecdh-sha2-nistp384', 'ecdh-sha2-nistp521', 'diffie-hellman-group-exchange-sha256', 'diffie-hellman-group14-sha256', 'diffie-hellman-group14-sha1', 'diffie-hellman-group-exchange-sha1'],
-        cipher: ['aes128-gcm@openssh.com', 'aes128-gcm', 'aes256-gcm@openssh.com', 'aes256-gcm', 'aes128-ctr', 'aes192-ctr', 'aes256-ctr', 'aes128-cbc', 'aes192-cbc', 'aes256-cbc'],
-        hmac: ['hmac-sha2-256', 'hmac-sha2-512', 'hmac-sha1']
+        serverHostKey: [
+          "ssh-rsa",
+          "rsa-sha2-512",
+          "rsa-sha2-256",
+          "ecdsa-sha2-nistp256",
+          "ecdsa-sha2-nistp384",
+          "ecdsa-sha2-nistp521",
+          "ssh-ed25519",
+        ],
+        kex: [
+          "ecdh-sha2-nistp256",
+          "ecdh-sha2-nistp384",
+          "ecdh-sha2-nistp521",
+          "diffie-hellman-group-exchange-sha256",
+          "diffie-hellman-group14-sha256",
+          "diffie-hellman-group14-sha1",
+          "diffie-hellman-group-exchange-sha1",
+        ],
+        cipher: [
+          "aes128-gcm@openssh.com",
+          "aes128-gcm",
+          "aes256-gcm@openssh.com",
+          "aes256-gcm",
+          "aes128-ctr",
+          "aes192-ctr",
+          "aes256-ctr",
+          "aes128-cbc",
+          "aes192-cbc",
+          "aes256-cbc",
+        ],
+        hmac: ["hmac-sha2-256", "hmac-sha2-512", "hmac-sha1"],
       },
       debug: (msg) => logger.info("SSH Debug: " + msg),
     };
@@ -493,15 +520,24 @@ const initializeServer = function () {
   // AI proxy endpoint to avoid CORS
   app.post("/api/ai/chat", async (req, res) => {
     try {
-      logger.info("AI proxy request received");
+      logger.info("AI proxy request received for model: " + req.body.model);
       const fetch = (await import("node-fetch")).default;
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
       const response = await fetch("http://localhost:11434/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(req.body),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
+        logger.error(`Ollama API error: ${response.status} ${response.statusText}`);
         throw new Error(`Ollama API error: ${response.statusText}`);
       }
 
@@ -509,11 +545,23 @@ const initializeServer = function () {
       res.setHeader("Content-Type", "application/json");
       res.setHeader("Transfer-Encoding", "chunked");
 
+      // Handle client disconnect
+      req.on('close', () => {
+        logger.info("AI proxy: Client disconnected, aborting upstream request");
+        controller.abort();
+      });
+
       // Pipe the streaming response
       response.body.pipe(res);
     } catch (error) {
       logger.error("AI proxy error:", error);
-      res.status(500).json({ error: error.message });
+      if (error.name === 'AbortError') {
+        res.status(504).json({ error: "Request timeout - Ollama may be starting up or model is loading" });
+      } else if (error.code === 'ECONNREFUSED') {
+        res.status(503).json({ error: "Cannot connect to Ollama - please ensure Ollama is running on port 11434" });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
     }
   });
 

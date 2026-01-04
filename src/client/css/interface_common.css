@@ -57,14 +57,16 @@ body {
 }
 
 .M2Text {
-    white-space: pre;
+    white-space: pre-wrap;
+    word-break: break-word;
     font-family: "Iosevka", monospace;
     font-weight: normal;
 }
 
 .M2Html {
-    display: inline-table; /* to make sure size is as big as content. inline-block is the more obvious choice */
-    white-space: nowrap;
+    display: inline-block; /* changed from inline-table to allow proper wrapping */
+    white-space: normal;
+    word-break: break-word;
     /* line-height: 0; */ /* necessary for exotic stuff. for all standard HTML elements need to redefine it to something more sensible */
     line-height: 1.2;
     font-family: "Epilogue";

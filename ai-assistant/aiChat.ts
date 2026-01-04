@@ -12,6 +12,8 @@ export class AIChatUI {
   private katexRenderTimeout: number | null = null;
   private userIsScrolling: boolean = false;
   private scrollTimeout: number | null = null;
+  private abortController: AbortController | null = null;
+  private userAborted: boolean = false;
 
   constructor(containerId: string) {
     this.container = document.getElementById(containerId)!;
@@ -137,6 +139,17 @@ export class AIChatUI {
       aiAssistant.setAutoExplain(this.autoExplainCheckbox.checked);
     });
 
+    // Click handler for M2 commands - delegate to chat messages container
+    this.chatMessages.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('m2-command')) {
+        const command = target.getAttribute('data-command');
+        if (command) {
+          this.pasteToM2Terminal(command);
+        }
+      }
+    });
+
     // Detect user manual scroll
     this.chatMessages.addEventListener('scroll', () => {
       // Clear existing timeout
@@ -170,12 +183,44 @@ export class AIChatUI {
   }
 
   private async handleSend(): Promise<void> {
+    // If already processing, abort the current request
+    if (this.isProcessing) {
+      if (this.abortController) {
+        this.userAborted = true;
+        this.abortController.abort();
+      }
+      return;
+    }
+
     const message = this.inputField.value.trim();
-    if (!message || this.isProcessing) return;
+    if (!message) return;
+
+    // Clean up any existing abort controller before creating a new one
+    if (this.abortController) {
+      this.abortController = null;
+    }
 
     this.isProcessing = true;
-    this.sendButton.disabled = true;
+    this.userAborted = false;
+    this.sendButton.textContent = 'STOP';
+    this.sendButton.style.background = '#d32f2f';
+    this.sendButton.disabled = false;
     this.inputField.value = '';
+
+    // Create fresh AbortController for this request
+    this.abortController = new AbortController();
+    const currentSignal = this.abortController.signal;
+
+    // Debug: check if signal is already aborted
+    if (currentSignal.aborted) {
+      console.error('AbortController signal is already aborted immediately after creation!');
+      this.isProcessing = false;
+      this.abortController = null;
+      this.sendButton.textContent = 'SEND';
+      this.sendButton.style.background = '';
+      this.addSystemMessage('Error: Internal state error. Please refresh the page.');
+      return;
+    }
 
     // Add user message
     this.addUserMessage(message);
@@ -199,7 +244,8 @@ export class AIChatUI {
             answerId = this.showAnswerIndicator();
           }
           this.updateAnswerContent(answerId, answer);
-        }
+        },
+        currentSignal
       );
 
       // Only keep thinking bubble if there was actual thinking content
@@ -220,10 +266,23 @@ export class AIChatUI {
       }
 
     } catch (error) {
-      console.error('AI Error:', error);
-      this.addSystemMessage('Error: Failed to get AI response. Please try again.');
+      if ((error as Error).name === 'AbortError') {
+        if (this.userAborted) {
+          this.addSystemMessage('Request stopped by user.');
+        } else {
+          console.error('AI Error: Request aborted unexpectedly', error);
+          this.addSystemMessage('Error: Request was interrupted. Please try again.');
+        }
+      } else {
+        console.error('AI Error:', error);
+        this.addSystemMessage('Error: Failed to get AI response. Please try again.');
+      }
     } finally {
       this.isProcessing = false;
+      this.userAborted = false;
+      this.abortController = null;
+      this.sendButton.textContent = 'SEND';
+      this.sendButton.style.background = '';
       this.sendButton.disabled = false;
       this.inputField.focus();
     }
@@ -409,7 +468,15 @@ export class AIChatUI {
       return placeholder;
     });
     
-    // Protect code blocks BEFORE inline code
+    // Parse M2 code blocks BEFORE inline code - convert to clickable commands
+    formatted = formatted.replace(/```(?:macaulay2|m2)?\n([\s\S]*?)```/gi, (match, code) => {
+      const placeholder = `___M2_CODE_BLOCK_${index}___`;
+      codePlaceholders[index] = this.formatM2CodeBlock(code.trim());
+      index++;
+      return placeholder;
+    });
+    
+    // Protect other code blocks
     formatted = formatted.replace(/```([\s\S]*?)```/g, (match) => {
       const placeholder = `___CODE_BLOCK_${index}___`;
       codePlaceholders[index] = '<pre><code>' + match.slice(3, -3) + '</code></pre>';
@@ -437,6 +504,7 @@ export class AIChatUI {
     
     // Restore code (before math, so code can contain math-like strings)
     codePlaceholders.forEach((code, i) => {
+      formatted = formatted.replace(`___M2_CODE_BLOCK_${i}___`, code);
       formatted = formatted.replace(`___CODE_BLOCK_${i}___`, code);
       formatted = formatted.replace(`___CODE_INLINE_${i}___`, code);
     });
@@ -449,6 +517,63 @@ export class AIChatUI {
     });
     
     return formatted;
+  }
+
+  private formatM2CodeBlock(code: string): string {
+    // Split into individual command lines
+    const lines = code.split('\n');
+    const html = lines.map(line => {
+      const trimmed = line.trim();
+      
+      // Skip empty lines
+      if (!trimmed) {
+        return '<div class="m2-comment"></div>';
+      }
+      
+      // Skip comments (start with -- or ///)
+      if (trimmed.startsWith('--') || trimmed.startsWith('///')) {
+        return `<div class="m2-comment">${this.escapeHtml(line)}</div>`;
+      }
+      
+      // Skip output lines (start with o1 =, o2 :, etc.)
+      if (/^o\d+\s*[=:]/.test(trimmed)) {
+        return `<div class="m2-output">${this.escapeHtml(line)}</div>`;
+      }
+      
+      // Skip lines that look like continuation of output (indented, no assignment)
+      if (line.startsWith('  ') && !/^\s*[a-zA-Z_][a-zA-Z0-9_]*\s*[=:]/.test(trimmed)) {
+        return `<div class="m2-output">${this.escapeHtml(line)}</div>`;
+      }
+      
+      // This is a command - make it clickable
+      return `<div class="m2-command" data-command="${this.escapeHtml(trimmed)}" title="Click to paste into M2 terminal">${this.escapeHtml(line)}</div>`;
+    }).join('');
+    
+    return `<div class="m2-code-block">${html}</div>`;
+  }
+
+  private pasteToM2Terminal(command: string): void {
+    // Find the M2 terminal input element
+    const terminalInput = document.querySelector('.M2CurrentInput') as HTMLElement;
+    if (!terminalInput) {
+      console.error('M2 terminal input not found');
+      return;
+    }
+
+    // Clean up command: remove trailing semicolon (DeepSeek adds it unnecessarily)
+    let cleanCommand = command.trim();
+    if (cleanCommand.endsWith(';')) {
+      cleanCommand = cleanCommand.slice(0, -1).trim();
+    }
+
+    // Focus the terminal input
+    terminalInput.focus();
+
+    // Paste the command using execCommand (compatible with M2 terminal's contenteditable)
+    document.execCommand('insertText', false, cleanCommand);
+
+    // Scroll terminal into view
+    terminalInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   private showTypingIndicator(): string {
